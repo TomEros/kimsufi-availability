@@ -3,22 +3,37 @@
 # author      : Julien Girard
 #
 
-require 'net/http'
+require 'net/https'
 require 'uri'
 require 'json'
 
 class OvhApi
 
-  def initialize()
+  def initialize(url)
+    @uri = URI.parse(url)
     @references = Hash.new()
   end
 
-  def set_data(json)
-    # Erase previous informations 
+  def request
+    # Erase previous informations
     @references = Hash.new()
 
+    # Request OVH API
+    print(@uri)
+    http = Net::HTTP.new(@uri.host, @uri.port)
+    http.use_ssl = true
+    if
+      proxy = Net::HTTP::Proxy(proxyUrl,proxyPort,proxyUser,proxyPass)
+      proxy.start(@uri)
+    end
+    request = Net::HTTP::Get.new(@uri.request_uri)
+    response = http.request(request)
+    if response.code.to_i != 200
+      raise "Request to OVH server has failed with http return code '#{response.code}'."
+    end
+
     # Parse answer
-    data = JSON.parse(json)
+    data = JSON.parse(response.body)
 
     if data == nil
       raise JSON::JSONError, 'No data.'
